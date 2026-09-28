@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Environment/secrets
+.env
+.env.*
+!.env.example
+
+# Database/local data
+database.db
+*.sqlite
+*.sqlite3
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Local AI/model files
+*.gguf
+models/
+model/
+*.bin
+
+# Logs
+*.log
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

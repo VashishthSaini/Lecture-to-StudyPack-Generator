@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecture-to-Study-Pack Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: false,
+            mangle: false
+        });
+    </script>
+</head>
+<body>
+    <div class="app">
+        <!-- Header / Top Navigation -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <div class="header-text">
+                        <h1>Lecture-to-Study-Pack</h1>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-actions" id="headerActions">
+                        <!-- Auth buttons (logged out) -->
+                        <div id="headerAuthButtons" class="header-auth-buttons">
+                            <button type="button" id="headerLoginBtn" class="btn btn-secondary btn-sm">Login</button>
+                            <button type="button" id="headerRegisterBtn" class="btn btn-primary btn-sm">Register</button>
+                        </div>
+                        <!-- User menu (logged in) -->
+                        <div id="headerUserMenu" class="header-user-menu hidden">
+                            <span class="user-name" id="headerUserName">
+                                <svg class="user-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <circle cx="12" cy="8" r="5"></circle>
+                                    <path d="M20 21a8 8 0 0 0-16 0"></path>
+                                </svg>
+                                <span></span>
+                            </span>
+                            <button type="button" id="headerLogoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+                        </div>
+                        <!-- Theme toggle -->
+                        <button type="button" id="themeToggle" class="btn btn-ghost btn-sm" aria-label="Toggle theme" title="Toggle theme">
+                            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <circle cx="12" cy="12" r="5"></circle>
+                                <line x1="12" y1="1" x2="12" y2="3"></line>
+                                <line x1="12" y1="21" x2="12" y2="23"></line>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                <line x1="1" y1="12" x2="3" y2="12"></line>
+                                <line x1="21" y1="12" x2="23" y2="12"></line>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                            </svg>
+                            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <div class="container">
+                <!-- Auth Section -->
+                <section id="authSection" class="card auth-card">
+                    <header class="card-header">
+                        <h2 id="authTitle">Login</h2>
+                    </header>
+                    <form id="loginForm" class="auth-form">
+                        <div class="form-field">
+                            <label for="loginUsername">Username</label>
+                            <input type="text" id="loginUsername" name="username" required autocomplete="username" placeholder="Enter your username">
+                        </div>
+                        <div class="form-field">
+                            <label for="loginPassword">Password</label>
+                            <input type="password" id="loginPassword" name="password" required autocomplete="current-password" placeholder="Enter your password">
+                        </div>
+                        <button type="submit" id="loginBtn" class="btn btn-primary btn-block">Login</button>
+                    </form>
+                    <form id="registerForm" class="auth-form hidden">
+                        <div class="form-field">
+                            <label for="registerUsername">Username</label>
+                            <input type="text" id="registerUsername" name="username" required autocomplete="username" placeholder="Choose a username">
+                        </div>
+                        <div class="form-field">
+                            <label for="registerEmail">Email</label>
+                            <input type="email" id="registerEmail" name="email" required autocomplete="email" placeholder="Enter your email">
+                        </div>
+                        <div class="form-field">
+                            <label for="registerPassword">Password</label>
+                            <input type="password" id="registerPassword" name="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters">
+                        </div>
+                        <button type="submit" id="registerBtn" class="btn btn-primary btn-block">Register</button>
+                    </form>
+                    <p class="auth-switch">
+                        <span id="authSwitchText">Don't have an account? </span>
+                        <button type="button" id="switchToRegister" class="btn-link">Register</button>
+                        <span id="switchToLoginText" class="hidden">Already have an account? </span>
+                        <button type="button" id="switchToLogin" class="btn-link hidden">Login</button>
+                    </p>
+                    <div id="authMessage" class="message hidden" aria-live="polite"></div>
+                </section>
+
+                <!-- User Account Section -->
+                <section id="userSection" class="card account-card hidden">
+                    <div class="account-header">
+                        <svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="8" r="5"></circle>
+                            <path d="M20 21a8 8 0 0 0-16 0"></path>
+                        </svg>
+                        <div>
+                            <p class="account-label">Account</p>
+                            <p class="account-user">Logged in as <strong id="currentUser"></strong></p>
+                        </div>
+                    </div>
+                    <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+                </section>
+
+                <!-- Create Lecture Section -->
+                <section id="lectureSection" class="card hidden">
+                    <header class="card-header">
+                        <h2>Create a Lecture</h2>
+                        <p class="card-subtitle">Upload a document or create manually</p>
+                    </header>
+
+                    <!-- Upload Document -->
+                    <div class="upload-area" id="uploadArea">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p class="upload-title">Upload PDF or DOCX</p>
+                        <p class="upload-hint">Drag and drop or click to select</p>
+                        <form id="uploadForm" enctype="multipart/form-data" class="upload-form">
+                            <div class="form-field">
+                                <label for="uploadTitle">Lecture Title (optional)</label>
+                                <input type="text" id="uploadTitle" name="title" placeholder="Leave empty to use filename">
+                            </div>
+                            <div class="form-field">
+                                <label for="lectureFile" class="file-label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    <span>Choose PDF or DOCX</span>
+                                </label>
+                                <input type="file" id="lectureFile" name="file" accept=".pdf,.docx" required class="file-input" aria-label="Select PDF or DOCX file">
+                            </div>
+                            <button type="submit" id="uploadBtn" class="btn btn-primary btn-block">Upload & Extract Text</button>
+                        </form>
+                        <div id="uploadMessage" class="message hidden" aria-live="polite"></div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Manual Entry -->
+                    <h3 class="section-heading">Or Create Manually</h3>
+                    <form id="lectureForm">
+                        <div class="form-field">
+                            <label for="title">Lecture Title</label>
+                            <input type="text" id="title" name="title" required placeholder="e.g., Introduction to Machine Learning">
+                        </div>
+                        <div class="form-field">
+                            <label for="content">Lecture Content</label>
+                            <textarea id="content" name="content" required rows="10" placeholder="Paste or type the lecture transcript here..."></textarea>
+                        </div>
+                        <button type="submit" id="saveBtn" class="btn btn-primary btn-block">Save Lecture</button>
+                    </form>
+                    <div id="message" class="message hidden" aria-live="polite"></div>
+                </section>
+
+                <!-- Generate Study Pack Section -->
+                <section id="studyPackSection" class="card hidden">
+                    <header class="card-header">
+                        <h2>Generate Study Pack</h2>
+                        <p class="card-subtitle">Choose a lecture and the type of study material you want</p>
+                    </header>
+
+                    <div class="form-field">
+                        <label for="lectureSelect">Select Lecture</label>
+                        <select id="lectureSelect" required aria-required="true">
+                            <option value="">-- Choose a lecture --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label>Select Study Task</label>
+                        <div class="task-cards" role="radiogroup" aria-label="Select study task type">
+                            <label class="task-card" data-task="summary">
+                                <input type="radio" name="taskType" value="summary" required>
+                                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                                <div class="task-content">
+                                    <strong>Summary</strong>
+                                    <span>Concise overview of key concepts</span>
+                                </div>
+                                <input type="radio" name="taskType" value="summary" class="task-radio" required>
+                            </label>
+                            <label class="task-card" data-task="notes">
+                                <input type="radio" name="taskType" value="notes">
+                                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                                <div class="task-content">
+                                    <strong>Notes</strong>
+                                    <span>Detailed notes with structure</span>
+                                </div>
+                                <input type="radio" name="taskType" value="notes" class="task-radio">
+                            </label>
+                            <label class="task-card" data-task="questions">
+                                <input type="radio" name="taskType" value="questions">
+                                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                                <div class="task-content">
+                                    <strong>Questions</strong>
+                                    <span>Practice questions for revision</span>
+                                </div>
+                                <input type="radio" name="taskType" value="questions" class="task-radio">
+                            </label>
+                            <label class="task-card" data-task="mcqs">
+                                <input type="radio" name="taskType" value="mcqs">
+                                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect>
+                                    <line x1="8" y1="9" x2="16" y2="9"></line>
+                                    <line x1="8" y1="15" x2="16" y2="15"></line>
+                                    <line x1="8" y1="9" x2="8.01" y2="9"></line>
+                                    <line x1="8" y1="15" x2="8.01" y2="15"></line>
+                                    <line x1="16" y1="9" x2="16.01" y2="9"></line>
+                                    <line x1="16" y1="15" x2="16.01" y2="15"></line>
+                                </svg>
+                                <div class="task-content">
+                                    <strong>MCQs</strong>
+                                    <span>Multiple-choice questions with answers</span>
+                                </div>
+                                <input type="radio" name="taskType" value="mcqs" class="task-radio">
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="button" id="generateBtn" class="btn btn-primary btn-block btn-lg" disabled>
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        <span class="btn-text">Generate Study Pack</span>
+                    </button>
+                    <div id="generateMessage" class="message hidden" aria-live="polite"></div>
+                </section>
+
+                <!-- Generated Study Pack Result -->
+                <section id="resultSection" class="card hidden">
+                    <header class="card-header">
+                        <h2>Generated Study Pack</h2>
+                    </header>
+                    <div class="result-header">
+                        <h3 id="resultTitle"></h3>
+                        <div class="result-meta" id="resultMeta"></div>
+                    </div>
+                    <div id="resultContent" class="result-content"></div>
+                    <div class="result-actions">
+                        <button type="button" id="newGenerateBtn" class="btn btn-secondary">Generate Another</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
