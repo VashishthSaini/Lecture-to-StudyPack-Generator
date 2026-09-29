@@ -2,7 +2,7 @@ import sqlite3
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), "database.db")
+DATABASE_PATH = os.environ.get("DATABASE_PATH", os.path.join(os.path.dirname(__file__), "database.db"))
 
 
 def get_connection():
@@ -12,8 +12,11 @@ def get_connection():
     return conn
 
 
-def init_db():
+def init_db(database_path=None):
     """Initialize the database with required tables."""
+    global DATABASE_PATH
+    if database_path is not None:
+        DATABASE_PATH = database_path
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -358,6 +361,110 @@ def get_study_pack(lecture_id):
     study_pack = cursor.fetchone()
     conn.close()
     return study_pack
+
+
+def get_lectures_without_chunks(user_id):
+    """
+    Get all lectures for a user that have zero chunks.
+    
+    Args:
+        user_id: ID of the user
+        
+    Returns:
+        List of lecture dicts (id, title, content) that have zero chunks
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT l.id, l.title, l.content
+        FROM lectures l
+        LEFT JOIN lecture_chunks lc ON l.id = lc.lecture_id
+        WHERE l.user_id = ? AND lc.id IS NULL
+        ORDER BY l.created_at DESC
+    """, (user_id,))
+    lectures = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return lectures
+
+
+def rebuild_missing_chunks(user_id):
+    """
+    Rebuild missing RAG chunks for all lectures belonging to a user.
+    
+    For each lecture that has zero chunks, this function will:
+    1. Chunk the lecture content using the existing chunk_text logic
+    2. Store the chunks in the lecture_chunks table
+    
+    Lectures that already have chunks are skipped (no duplicates created).
+    
+    Args:
+        user_id: ID of the user whose lectures to process
+        
+    Returns:
+        Dict with results: {
+            "total_lectures_checked": int,
+            "lectures_with_existing_chunks": int,
+            "lectures_rebuilt": int,
+            "total_chunks_created": int,
+            "errors": list of error messages
+        }
+    """
+    from services.rag_service import chunk_lecture
+    
+    lectures_without_chunks = get_lectures_without_chunks(user_id)
+    
+    if not lectures_without_chunks:
+        return {
+            "total_lectures_checked": 0,
+            "lectures_with_existing_chunks": 0,
+            "lectures_rebuilt": 0,
+            "total_chunks_created": 0,
+            "errors": []
+        }
+    
+    # Get total lectures for this user to report lectures with existing chunks
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) FROM lectures WHERE user_id = ?",
+        (user_id,)
+    )
+    total_lectures = cursor.fetchone()[0]
+    conn.close()
+    
+    lectures_with_chunks = total_lectures - len(lectures_without_chunks)
+    
+    results = {
+        "total_lectures_checked": total_lectures,
+        "lectures_with_existing_chunks": lectures_with_chunks,
+        "lectures_rebuilt": 0,
+        "total_chunks_created": 0,
+        "errors": []
+    }
+    
+    for lecture in lectures_without_chunks:
+        try:
+            lecture_id = lecture["id"]
+            content = lecture["content"]
+            
+            if not content or not content.strip():
+                results["errors"].append(f"Lecture {lecture_id} has empty content")
+                continue
+            
+            # Chunk the lecture content
+            chunks = chunk_lecture(lecture["id"], content)
+            
+            if chunks:
+                created = create_lecture_chunks(lecture_id, chunks)
+                results["lectures_rebuilt"] += 1
+                results["total_chunks_created"] += len(chunks)
+            else:
+                results["errors"].append(f"Lecture {lecture_id} produced no chunks")
+                
+        except Exception as e:
+            results["errors"].append(f"Lecture {lecture['id']}: {str(e)}")
+    
+    return results
 
 
 if __name__ == "__main__":

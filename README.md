@@ -347,9 +347,57 @@ For production deployment, you would need to:
 4. **Use a production WSGI server** (Gunicorn, uWSGI) behind a reverse proxy (Nginx)
 5. **Enable HTTPS** with valid TLS certificates
 6. **Set up proper logging and monitoring**
-7. **Configure CORS and security headers**
+6. **Configure CORS and security headers**
 
 The current local llama.cpp/Qwen setup is intended for **local development and testing only**.
+
+### Render Deployment
+
+This project can be deployed on [Render](https://render.com) with the following configuration.
+
+#### Prerequisites
+- GitHub repository with this code
+- Render account
+- Hosted OpenAI-compatible LLM provider (e.g., Together.ai, Fireworks.ai, etc.) with API key
+- Render Persistent Disk (if SQLite persistence is required)
+
+#### Render Build Command
+```bash
+pip install -r requirements.txt
+```
+
+#### Render Start Command
+```bash
+gunicorn --bind 0.0.0.0:$PORT app:app
+```
+
+#### Required Environment Variables on Render
+
+| Variable | Description |
+|----------|-------------|
+| `SECRET_KEY` | Flask session secret (generate with `python -c "import secrets; print(secrets.token_hex(32))"`) |
+| `DEFAULT_MODEL_PROVIDER` | `openai_compatible` (use hosted provider on Render) |
+| `HOSTED_LLM_BASE_URL` | Base URL for hosted OpenAI-compatible API (e.g., `https://api.together.xyz/v1`) |
+| `HOSTED_LLM_API_KEY` | API key for the hosted provider |
+| `HOSTED_LLM_MODEL` | Model name (e.g., `meta-llama/Llama-3-70b-chat-hf`) |
+| `HOSTED_LLM_TIMEOUT` | Request timeout in seconds (default: 120) |
+| `HOSTED_LLM_MAX_TOKENS` | Maximum tokens to generate (default: 4096) |
+| `DATABASE_PATH` | Path to SQLite database (e.g., `/var/data/database.db` on Render persistent disk) |
+| `SECRET_KEY` | Flask session secret (generate with `python -c "import secrets; print(secrets.token_hex(32))"`) |
+
+#### Important Notes for Render Deployment
+
+- **Render should NOT use localhost:8080 for the LLM.** The local llama.cpp/Qwen setup is for local development only. On Render, you must use a hosted LLM provider (Together.ai, Fireworks.ai, Together AI, etc.) with an OpenAI-compatible API.
+
+- **Local llama.cpp/Qwen remains available for local development.** The codebase supports both modes; you simply switch via `DEFAULT_MODEL_PROVIDER` and the appropriate environment variables.
+
+- **SQLite data needs persistent storage on Render.** By default, Render's filesystem is ephemeral. To persist SQLite data, create a **Persistent Disk** in the Render dashboard and mount it at `/var/data`. Then set `DATABASE_PATH=/var/data/database.db` in your environment variables.
+
+- **Do not commit `.env`, API keys, GGUF models, `database.db`, or uploaded files.** These are all listed in `.gitignore`.
+
+- **Local llama.cpp/Qwen remains available for local development.** The codebase supports both modes simultaneously; you simply switch via `DEFAULT_MODEL_PROVIDER` and the appropriate environment variables.
+
+---
 
 ---
 
@@ -383,8 +431,10 @@ No license has been specified for this project yet.
 | `.\venv\Scripts\Activate.ps1` | Activate venv (Windows PowerShell) |
 | `pip install -r requirements.txt` | Install dependencies |
 | `cp .env.example .env` | Create local config |
-| `llama-server -hf Qwen/Qwen3-4B-GGUF:Q4_K_M --host 0.0.0.0 --port 8080` | Start llama.cpp |
-| `python app.py` | Start Flask app |
+| `llama-server -hf Qwen/Qwen3-4B-GGUF:Q4_K_M --host 0.0.0.0 --port 8080` | Start llama.cpp (local development) |
+| `python app.py` | Start Flask app (local development) |
+| `gunicorn --bind 0.0.0.0:$PORT app:app` | Start Flask app (production/Render) |
+| `deactivate` | Deactivate virtual environment |
 
 ---
 

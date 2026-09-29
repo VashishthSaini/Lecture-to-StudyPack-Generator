@@ -11,10 +11,10 @@ SUPPORTED_PROVIDERS = {
     PROVIDER_ANTHROPIC
 }
 
-DEFAULT_PROVIDER = os.environ.get("DEFAULT_MODEL_PROVIDER", PROVIDER_LOCAL)
+DEFAULT_PROVIDER = os.environ.get("DEFAULT_MODEL_PROVIDER", PROVIDER_OPENAI_COMPATIBLE)
 
 # Local llama.cpp server (OpenAI-compatible mode)
-LOCAL_LLM_BASE_URL = os.environ.get("LOCAL_LLM_BASE_URL", "http://localhost:8080/v1")
+LOCAL_LLM_BASE_URL = os.environ.get("LOCAL_LLM_BASE_URL", "")
 LOCAL_LLM_API_KEY = os.environ.get("LOCAL_LLM_API_KEY", "not-needed")
 LOCAL_LLM_MODEL = os.environ.get("LOCAL_LLM_MODEL", "qwen3-4b-q4_k_m")
 

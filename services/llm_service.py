@@ -16,7 +16,7 @@ SUPPORTED_PROVIDERS = {
 }
 
 # Local llama.cpp server (OpenAI-compatible mode) - Qwen3-4B Q4_K_M
-LOCAL_LLM_BASE_URL = os.environ.get("LOCAL_LLM_BASE_URL", "http://localhost:8080/v1")
+LOCAL_LLM_BASE_URL = os.environ.get("LOCAL_LLM_BASE_URL", "")
 LOCAL_LLM_API_KEY = os.environ.get("LOCAL_LLM_API_KEY", "not-needed")
 LOCAL_LLM_MODEL = os.environ.get("LOCAL_LLM_MODEL", "qwen3-4b-q4_k_m")
 LOCAL_LLM_TIMEOUT = int(os.environ.get("LOCAL_LLM_TIMEOUT", "300"))
@@ -35,7 +35,7 @@ ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
 ANTHROPIC_TIMEOUT = int(os.environ.get("ANTHROPIC_TIMEOUT", "120"))
 ANTHROPIC_MAX_TOKENS = int(os.environ.get("ANTHROPIC_MAX_TOKENS", "4096"))
 
-DEFAULT_PROVIDER = os.environ.get("DEFAULT_MODEL_PROVIDER", PROVIDER_LOCAL)
+DEFAULT_PROVIDER = os.environ.get("DEFAULT_MODEL_PROVIDER", PROVIDER_OPENAI_COMPATIBLE)
 
 # System prompts for each task type (used as system message in chat format)
 TASK_SYSTEM_PROMPTS = {

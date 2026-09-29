@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, request, jsonify, session
-from database import init_db, create_lecture, create_user, find_user_by_username, find_user_by_email, verify_password, get_lecture_by_id, get_lectures_by_user, update_lecture, delete_lecture, create_lecture_chunks, get_lecture_chunks, create_study_pack
+from database import init_db, create_lecture, create_user, find_user_by_username, find_user_by_email, verify_password, get_lecture_by_id, get_lectures_by_user, update_lecture, delete_lecture, create_lecture_chunks, get_lecture_chunks, create_study_pack, rebuild_missing_chunks
 from services.document_processor import extract_text_from_file, is_allowed_file
 from services.task_router import route_task, get_supported_tasks
 from services.model_selection import select_model, get_provider_status
@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB max upload
 
-init_db()
+init_db(os.environ.get("DATABASE_PATH"))
 
 @app.route("/")
 def index():
@@ -384,6 +384,25 @@ def chunk_lecture_endpoint(lecture_id):
     }), 200
 
 
+@app.route("/api/rag/rebuild-missing", methods=["POST"])
+def rebuild_missing_chunks_endpoint():
+    """Rebuild missing RAG chunks for all lectures belonging to the current user.
+    
+    This endpoint checks all lectures belonging to the authenticated user
+    and rebuilds RAG chunks for any lectures that have zero chunks.
+    Lectures that already have chunks are skipped (no duplicates created).
+    
+    Returns:
+        JSON with results: total_lectures_checked, lectures_with_existing_chunks,
+        lectures_rebuilt, total_chunks_created, errors
+    """
+    if "user_id" not in session:
+        return jsonify({"error": "Authentication required"}), 401
+
+    results = rebuild_missing_chunks(session["user_id"])
+    return jsonify(results), 200
+
+
 @app.route("/api/study-pack/generate", methods=["POST"])
 def generate_study_pack_endpoint():
     """
@@ -479,4 +498,5 @@ def llm_status_endpoint():
     return jsonify(get_llm_service_status()), 200
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Local development mode
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
