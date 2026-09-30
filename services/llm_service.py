@@ -15,27 +15,52 @@ SUPPORTED_PROVIDERS = {
     PROVIDER_ANTHROPIC
 }
 
-# Local llama.cpp server (OpenAI-compatible mode) - Qwen3-4B Q4_K_M
-LOCAL_LLM_BASE_URL = os.environ.get("LOCAL_LLM_BASE_URL", "")
-LOCAL_LLM_API_KEY = os.environ.get("LOCAL_LLM_API_KEY", "not-needed")
-LOCAL_LLM_MODEL = os.environ.get("LOCAL_LLM_MODEL", "qwen3-4b-q4_k_m")
-LOCAL_LLM_TIMEOUT = int(os.environ.get("LOCAL_LLM_TIMEOUT", "300"))
-LOCAL_LLM_MAX_TOKENS = int(os.environ.get("LOCAL_LLM_MAX_TOKENS", "4096"))
+# Default model names (can be overridden via environment)
+DEFAULT_LOCAL_MODEL = "qwen3-4b-q4_k_m"
+DEFAULT_ANTHROPIC_MODEL = "claude-3-haiku-20240307"
 
-# Hosted OpenAI-compatible provider
-HOSTED_LLM_BASE_URL = os.environ.get("HOSTED_LLM_BASE_URL", "")
-HOSTED_LLM_API_KEY = os.environ.get("HOSTED_LLM_API_KEY", "")
-HOSTED_LLM_MODEL = os.environ.get("HOSTED_LLM_MODEL", "")
-HOSTED_LLM_TIMEOUT = int(os.environ.get("HOSTED_LLM_TIMEOUT", "120"))
-HOSTED_LLM_MAX_TOKENS = int(os.environ.get("HOSTED_LLM_MAX_TOKENS", "4096"))
 
-# Anthropic
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
-ANTHROPIC_TIMEOUT = int(os.environ.get("ANTHROPIC_TIMEOUT", "120"))
-ANTHROPIC_MAX_TOKENS = int(os.environ.get("ANTHROPIC_MAX_TOKENS", "4096"))
+def _get_env(key: str, default: str = "") -> str:
+    """Get environment variable at call time."""
+    return os.environ.get(key, default)
 
-DEFAULT_PROVIDER = os.environ.get("DEFAULT_MODEL_PROVIDER", PROVIDER_OPENAI_COMPATIBLE)
+
+def get_provider_config(provider: str) -> Dict[str, Any]:
+    """Get configuration for a provider at call time."""
+    if provider == PROVIDER_LOCAL:
+        return {
+            "base_url": os.environ.get("LOCAL_LLM_BASE_URL", ""),
+            "api_key": os.environ.get("LOCAL_LLM_API_KEY", "not-needed"),
+            "model": os.environ.get("LOCAL_LLM_MODEL", "qwen3-4b-q4_k_m"),
+            "timeout": int(os.environ.get("LOCAL_LLM_TIMEOUT", "300")),
+            "max_tokens": int(os.environ.get("LOCAL_LLM_MAX_TOKENS", "4096")),
+            "is_configured": True  # Local is always "configured" but may not be running
+        }
+    elif provider == PROVIDER_OPENAI_COMPATIBLE:
+        base_url = os.environ.get("HOSTED_LLM_BASE_URL", "")
+        api_key = os.environ.get("HOSTED_LLM_API_KEY", "")
+        model = os.environ.get("HOSTED_LLM_MODEL", "")
+        return {
+            "base_url": base_url,
+            "api_key": os.environ.get("HOSTED_LLM_API_KEY", ""),
+            "model": os.environ.get("HOSTED_LLM_MODEL", ""),
+            "timeout": int(os.environ.get("HOSTED_LLM_TIMEOUT", "120")),
+            "max_tokens": int(os.environ.get("HOSTED_LLM_MAX_TOKENS", "4096")),
+            "is_configured": bool(base_url and api_key and model)
+        }
+    elif provider == PROVIDER_ANTHROPIC:
+        return {
+            "api_key": os.environ.get("ANTHROPIC_API_KEY", ""),
+            "model": os.environ.get("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
+            "timeout": int(os.environ.get("ANTHROPIC_TIMEOUT", "120")),
+            "max_tokens": int(os.environ.get("ANTHROPIC_MAX_TOKENS", "4096")),
+            "is_configured": bool(os.environ.get("ANTHROPIC_API_KEY", ""))
+        }
+    else:
+        return {
+            "is_configured": False
+        }
+
 
 # System prompts for each task type (used as system message in chat format)
 TASK_SYSTEM_PROMPTS = {
@@ -156,32 +181,35 @@ Please generate the requested study material using Markdown formatting. Generate
 
 
 def get_provider_config(provider: str) -> Dict[str, Any]:
-    """Get configuration for a provider."""
+    """Get configuration for a provider at call time."""
     if provider == PROVIDER_LOCAL:
         return {
-            "base_url": LOCAL_LLM_BASE_URL,
-            "api_key": LOCAL_LLM_API_KEY,
-            "model": LOCAL_LLM_MODEL,
-            "timeout": LOCAL_LLM_TIMEOUT,
-            "max_tokens": LOCAL_LLM_MAX_TOKENS,
+            "base_url": os.environ.get("LOCAL_LLM_BASE_URL", ""),
+            "api_key": os.environ.get("LOCAL_LLM_API_KEY", "not-needed"),
+            "model": os.environ.get("LOCAL_LLM_MODEL", "qwen3-4b-q4_k_m"),
+            "timeout": int(os.environ.get("LOCAL_LLM_TIMEOUT", "300")),
+            "max_tokens": int(os.environ.get("LOCAL_LLM_MAX_TOKENS", "4096")),
             "is_configured": True  # Local is always "configured" but may not be running
         }
     elif provider == PROVIDER_OPENAI_COMPATIBLE:
+        base_url = os.environ.get("HOSTED_LLM_BASE_URL", "")
+        api_key = os.environ.get("HOSTED_LLM_API_KEY", "")
+        model = os.environ.get("HOSTED_LLM_MODEL", "")
         return {
-            "base_url": HOSTED_LLM_BASE_URL,
-            "api_key": HOSTED_LLM_API_KEY,
-            "model": HOSTED_LLM_MODEL,
-            "timeout": HOSTED_LLM_TIMEOUT,
-            "max_tokens": HOSTED_LLM_MAX_TOKENS,
-            "is_configured": bool(HOSTED_LLM_BASE_URL and HOSTED_LLM_API_KEY and HOSTED_LLM_MODEL)
+            "base_url": base_url,
+            "api_key": os.environ.get("HOSTED_LLM_API_KEY", ""),
+            "model": os.environ.get("HOSTED_LLM_MODEL", ""),
+            "timeout": int(os.environ.get("HOSTED_LLM_TIMEOUT", "120")),
+            "max_tokens": int(os.environ.get("HOSTED_LLM_MAX_TOKENS", "4096")),
+            "is_configured": bool(base_url and api_key and model)
         }
     elif provider == PROVIDER_ANTHROPIC:
         return {
-            "api_key": ANTHROPIC_API_KEY,
-            "model": ANTHROPIC_MODEL,
-            "timeout": ANTHROPIC_TIMEOUT,
-            "max_tokens": ANTHROPIC_MAX_TOKENS,
-            "is_configured": bool(ANTHROPIC_API_KEY)
+            "api_key": os.environ.get("ANTHROPIC_API_KEY", ""),
+            "model": os.environ.get("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
+            "timeout": int(os.environ.get("ANTHROPIC_TIMEOUT", "120")),
+            "max_tokens": int(os.environ.get("ANTHROPIC_MAX_TOKENS", "4096")),
+            "is_configured": bool(os.environ.get("ANTHROPIC_API_KEY", ""))
         }
     else:
         return {
@@ -196,45 +224,38 @@ def is_provider_available(provider: str) -> bool:
     if not config.get("is_configured"):
         return False
     
-    if provider == PROVIDER_LOCAL:
-        # Check if server is reachable
+    if provider == "local":
+        # Check if local server is reachable
         try:
-            response = requests.get(f"{config['base_url'].rstrip('/v1')}/health", timeout=5)
-            return response.status_code == 200
+            base_url = os.environ.get("LOCAL_LLM_BASE_URL", "")
+            response = requests.get(f"{base_url.rstrip('/v1')}/health", timeout=5)
+            if response.status_code == 200:
+                return True
         except Exception:
-            try:
-                response = requests.get(
-                    f"{config['base_url']}/models",
-                    headers={"Authorization": f"Bearer {config['api_key']}"},
-                    timeout=5
-                )
-                return response.status_code == 200
-            except Exception:
-                return False
-    
-    elif provider == PROVIDER_OPENAI_COMPATIBLE:
-        # Check if we can reach the API
+            pass  # Fall through to /models endpoint
+        
+        # Fallback to /models endpoint
         try:
+            base_url = os.environ.get("LOCAL_LLM_BASE_URL", "")
+            api_key = os.environ.get("LOCAL_LLM_API_KEY", "not-needed")
             response = requests.get(
-                f"{config['base_url'].rstrip('/v1')}/health",
-                headers={"Authorization": f"Bearer {config['api_key']}"},
+                f"{base_url}/models",
+                headers={"Authorization": f"Bearer {api_key}"},
                 timeout=5
             )
             return response.status_code == 200
         except Exception:
-            try:
-                response = requests.get(
-                    f"{config['base_url']}/models",
-                    headers={"Authorization": f"Bearer {config['api_key']}"},
-                    timeout=5
-                )
-                return response.status_code == 200
-            except Exception:
-                return False
+            return False
     
-    elif provider == PROVIDER_ANTHROPIC:
+    elif provider == "openai_compatible":
+        # For hosted OpenAI-compatible providers (Hugging Face, Together.ai, etc.),
+        # don't require a /health endpoint. If configured, consider available.
+        # The actual API call will validate the configuration at request time.
+        return True
+    
+    elif provider == "anthropic":
         # Anthropic doesn't have a simple health check, just check API key
-        return bool(config.get("api_key"))
+        return bool(os.environ.get("ANTHROPIC_API_KEY", ""))
     
     return False
 
@@ -242,7 +263,7 @@ def is_provider_available(provider: str) -> bool:
 def get_available_providers() -> list:
     """Return list of available providers based on configuration."""
     available = []
-    for provider in SUPPORTED_PROVIDERS:
+    for provider in ["local", "openai_compatible", "anthropic"]:
         if is_provider_available(provider):
             available.append(provider)
     return available
@@ -437,9 +458,9 @@ def generate_study_material(task_type: str, context: str, provider: str = None) 
 
     # Determine provider
     if provider is None:
-        provider = DEFAULT_PROVIDER
+        provider = "openai_compatible"
 
-    if provider not in SUPPORTED_PROVIDERS:
+    if provider not in ["local", "openai_compatible", "anthropic"]:
         return {
             "success": False,
             "content": None,
@@ -455,8 +476,8 @@ def generate_study_material(task_type: str, context: str, provider: str = None) 
             "success": False,
             "content": None,
             "error": f"Provider '{provider}' is not configured. Check environment variables.",
-            "provider": provider,
-            "model": config.get("model")
+            "provider": None,
+            "model": None
         }
 
     # Check availability (server reachable)
@@ -473,9 +494,9 @@ def generate_study_material(task_type: str, context: str, provider: str = None) 
     user_prompt = USER_PROMPT_TEMPLATE.format(context=context)
 
     # Call the appropriate provider
-    if provider in (PROVIDER_LOCAL, PROVIDER_OPENAI_COMPATIBLE):
+    if provider in ("local", "openai_compatible"):
         result = call_openai_compatible_chat(system_prompt, user_prompt, config)
-    elif provider == PROVIDER_ANTHROPIC:
+    elif provider == "anthropic":
         # For Anthropic, combine system + user into a single prompt (Anthropic uses messages array)
         combined_prompt = f"{system_prompt}\n\n{user_prompt}"
         result = call_anthropic(combined_prompt, config)
@@ -509,11 +530,11 @@ def generate_study_material(task_type: str, context: str, provider: str = None) 
 def get_llm_service_status() -> Dict[str, Any]:
     """Get status of all LLM providers."""
     status = {
-        "default_provider": DEFAULT_PROVIDER,
+        "default_provider": "openai_compatible",
         "providers": {}
     }
 
-    for provider in SUPPORTED_PROVIDERS:
+    for provider in ["local", "openai_compatible", "anthropic"]:
         config = get_provider_config(provider)
         available = is_provider_available(provider) if config.get("is_configured") else False
         
@@ -521,7 +542,7 @@ def get_llm_service_status() -> Dict[str, Any]:
             "configured": config.get("is_configured", False),
             "available": available,
             "model": config.get("model"),
-            "base_url": config.get("base_url") if provider in (PROVIDER_LOCAL, PROVIDER_OPENAI_COMPATIBLE) else None,
+            "base_url": config.get("base_url") if provider in ("local", "openai_compatible") else None,
             "error": None if available else (f"Provider '{provider}' not available" if config.get("is_configured") else f"Provider '{provider}' not configured")
         }
 
